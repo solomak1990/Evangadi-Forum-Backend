@@ -1,0 +1,6 @@
+# dependencies
+/node_modules
+
+# environment variables
+.env
+Messages addressed to "meeting group chat" will also appear in the meeting group chat in Team Chat
