@@ -5,7 +5,7 @@ async function authMiddleware(req, res, next) {
   if (!authHeader || !authHeader.startsWith("Bearer")) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ msg: "Authorized invalide" });
+      .json({ msg: "Authorized invalid" });
   }
   const token = authHeader.split(" ")[1];
   // console.log(authHeader);
@@ -18,7 +18,7 @@ async function authMiddleware(req, res, next) {
   } catch (error) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ msg: "Authorized invalide" });
+      .json({ msg: "Authorized invalid" });
   }
 }
 
