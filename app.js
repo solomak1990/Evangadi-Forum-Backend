@@ -1,6 +1,6 @@
-const express = require("express")
+const express = require("express");
 const app = express();
-const port = 3000
+const port = 3000;
 
 // const dbConnection = require("./db/dbConfig")
 // middleware for Json parsing 
@@ -10,15 +10,17 @@ const userRoutes = require("./routes/userRoute")
 
 app.use("/api/user", userRoutes)
 
-async function start(){
-    try
-    {
-        // const result = await dbConnection.execute("select, 'test'")    
-    app.listen(port)
-    // console.log("database connection established");
+const answerRoutes = require("./routes/answerRoute");
+app.use("/api/answers", answerRoutes);
+async function start() {
+  try {
+    const result = await dbConnection.execute("select, 'test'")
+    app.listen(port);
+    console.log("database connection established");
     console.log(`Server is running on http://localhost:${port}`);
-    }catch(error){
-        console.log(error.message);
-    }
+  } catch (error) {
+    console.log(error.message);
+  }
 }
-start()
+start();
+
