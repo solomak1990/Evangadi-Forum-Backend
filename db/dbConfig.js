@@ -6,4 +6,3 @@ const dbConnection = mysql2.createPool({
     password:"1234",
     connectionLimit: 11
 })
-module.exports= dbConnection.promise()
