@@ -28,11 +28,11 @@ app.use("/api/users", UserRoutes);
 //questions routes middleware
 app.use("/api/questions", authMiddleware, questionsRoutes);
 
- app.use("/api/questions", questionsRoutes);
+// app.use("/api/questions", questionsRoutes);
 
 //answer routes middleware
 app.use("/api/answers", authMiddleware, answersRoutes);
- app.use("/api/answers", answersRoutes);
+// app.use("/api/answers", answersRoutes);
 async function start() {
   try {
     const result = await dbConnection.execute("select'test' ");
