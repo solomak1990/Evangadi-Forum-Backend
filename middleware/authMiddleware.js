@@ -5,20 +5,20 @@ async function authMiddleware(req, res, next) {
   if (!authHeader || !authHeader.startsWith("Bearer")) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ msg: "Authorized invalid" });
+      .json({ error: "Unauthorized", message: "Authentication invalid" });
   }
   const token = authHeader.split(" ")[1];
   console.log(authHeader);
   console.log(token);
 
   try {
-    const { username, userid } = jwt.verify(token, "secret");
+    const { username, userid } = jwt.verify(token, "MkZLgWzdY4i4Hz6KMKixrtKeX0UTom7Q6yyy76r");
     req.user = { username, userid };
     next();
   } catch (error) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ msg: "Authorized invalid" });
+      .json({ error: "Unauthorized", message: "Authentication invalid" });
   }
 }
 

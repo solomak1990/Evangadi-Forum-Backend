@@ -1,10 +1,186 @@
+// const dbConnection = require("../db/dbConfig.js");
+// const { StatusCodes } = require("http-status-codes");
+// const { randomUUID } = require("crypto");
+
+// // ** POST QUESTION Handler **
+// const askQuestion = async (req, res) => {
+//   const { title, description } = req.body;
+//   const userid = req.user.userid;
+
+//   if (!title || !description) {
+//     return res.status(StatusCodes.BAD_REQUEST).json({
+//       error: "Bad Request",
+//       message: "Please provide all required fields",
+//     });
+//   }
+
+//   try {
+//     const questionid = randomUUID();
+//     await dbConnection.query(
+//       "INSERT INTO questions (question_id, user_id, title, description) VALUES (?, ?, ?, ?)",
+//       [questionid, userid, title, description]
+//     );
+
+//     return res.status(StatusCodes.CREATED).json({
+//       message: "Question created successfully",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       error: "Internal Server Error",
+//       message: "An unexpected error occurred.",
+//     });
+//   }
+// };
+
+// // ** GET ALL QUESTIONS Handler **
+// const allQuestions = async (req, res) => {
+//   try {
+//     const query = `
+//       SELECT 
+//         q.question_id AS question_id,
+//         q.title,
+//         q.description AS content,
+//         u.user_name AS user_name
+//       FROM questions q
+//       JOIN users u ON q.user_id = u.user_id
+//       ORDER BY q.id DESC;
+//     `;
+//     const [rows] = await dbConnection.query(query);
+
+//     if (rows.length === 0) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         error: "Not Found",
+//         message: "No questions found.",
+//       });
+//     }
+
+//     return res.status(StatusCodes.OK).json({ questions: rows });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       error: "Internal Server Error",
+//       message: "An unexpected error occurred.",
+//     });
+//   }
+// };
+
+// // ** GET SINGLE QUESTION Handler **
+// const singleQuestion = async (req, res) => {
+//   const { question_id } = req.params;
+//   console.log("Looking for question:", question_id);
+
+//   try {
+//     const [rows] = await dbConnection.query(
+//       "SELECT  questionid AS question_id, title, description AS content, userid AS user_id FROM questions WHERE question_id = ?",
+//       [question_id]
+//     );
+
+//     if (rows.length === 0) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         error: "Not Found",
+//         message: "The requested question could not be found.",
+//       });
+//     }
+
+//     return res.status(StatusCodes.OK).json({ question: rows[0] });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       error: "Internal Server Error",
+//       message: "An unexpected error occurred.",
+//     });
+//   }
+// };
+
+
+
+
+
+// // ** EDIT QUESTION Handler **
+// const editQuestion = async (req, res) => {
+//   const userid = req.user.userid;
+//   const { questionid } = req.params;
+//   const { title, description } = req.body;
+
+//   if (!title && !description) {
+//     return res.status(StatusCodes.BAD_REQUEST).json({
+//       error: "Bad Request",
+//       message: "At least title or description is required",
+//     });
+//   }
+
+//   try {
+//     const [questionResult] = await dbConnection.query(
+//       "SELECT user_id FROM questions WHERE question_id = ?",
+//       [questionid]
+//     );
+//     if (questionResult.length === 0) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         error: "Not Found",
+//         message: `No question found with id ${questionid}`,
+//       });
+//     }
+//     if (questionResult[0].userid !== userid) {
+//       return res.status(StatusCodes.FORBIDDEN).json({
+//         error: "Forbidden",
+//         message: "You are not authorized to edit this question",
+//       });
+//     }
+
+//     const fields = [];
+//     const values = [];
+
+//     if (title) {
+//       fields.push("title = ?");
+//       values.push(title);
+//     }
+//     if (description) {
+//       fields.push("description = ?");
+//       values.push(description);
+//     }
+
+//     values.push(questionid);
+
+//     const updateQuery = `UPDATE questions SET ${fields.join(
+//       ", "
+//     )} WHERE question_id = ?`;
+
+//     const [updateResult] = await dbConnection.query(updateQuery, values);
+
+//     if (updateResult.affectedRows === 0) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         error: "Not Found",
+//         message: `No question found with id ${questionid}`,
+//       });
+//     }
+
+//     return res
+//       .status(StatusCodes.OK)
+//       .json({ message: "Question updated successfully" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       error: "Internal Server Error",
+//       message: "Could not update the question.",
+//     });
+//   }
+// };
+
+// module.exports = {
+//   askQuestion,
+//   allQuestions,
+//   singleQuestion,
+//   editQuestion,
+// };
 const dbConnection = require("../db/dbConfig.js");
 const { StatusCodes } = require("http-status-codes");
+const { randomUUID } = require("crypto");
 
-// ** POST QUESTION Handler **
+// POST QUESTION
 const askQuestion = async (req, res) => {
   const { title, description } = req.body;
-  const userid = req.user.userid;
+  const user_id = req.user.userid;
 
   if (!title || !description) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -14,13 +190,15 @@ const askQuestion = async (req, res) => {
   }
 
   try {
+    const question_id = randomUUID();
     await dbConnection.query(
-      "INSERT INTO questions (userid, title, description) VALUES (?, ?, ?)",
-      [userid, title, description]
+      "INSERT INTO questions (question_id, user_id, title, description) VALUES (?, ?, ?, ?)",
+      [question_id, user_id, title, description]
     );
 
     return res.status(StatusCodes.CREATED).json({
       message: "Question created successfully",
+      question_id,
     });
   } catch (error) {
     console.error(error);
@@ -31,18 +209,19 @@ const askQuestion = async (req, res) => {
   }
 };
 
-// ** GET ALL QUESTIONS Handler **
+// GET ALL QUESTIONS
 const allQuestions = async (req, res) => {
   try {
-    const query = `
-      SELECT q.*, u.username, u.email 
+    const [rows] = await dbConnection.query(`
+      SELECT 
+        q.question_id,
+        q.title,
+        q.description AS content,
+        u.user_name
       FROM questions q
-      JOIN users u ON q.userid = u.userid
-      ORDER BY q.questionid DESC;
-
-    
-    `;
-    const [rows] = await dbConnection.query(query);
+      JOIN users u ON q.user_id = u.user_id
+      ORDER BY q.id DESC
+    `);
 
     if (rows.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -51,47 +230,48 @@ const allQuestions = async (req, res) => {
       });
     }
 
-    return res.status(StatusCodes.OK).json(rows);
+    return res.status(StatusCodes.OK).json({ questions: rows });
   } catch (error) {
     console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal Server Error",
-      message: "Could not fetch questions.",
+      message: "An unexpected error occurred.",
     });
   }
 };
 
-// ** GET SINGLE QUESTION Handler **
+// GET SINGLE QUESTION
 const singleQuestion = async (req, res) => {
-  const { questionid } = req.params;
+  const { question_id } = req.params; // matches route :question_id
+  console.log("Looking for question:", question_id);
 
   try {
     const [rows] = await dbConnection.query(
-      "SELECT * FROM questions WHERE questionid = ?",
-      [questionid]
+      "SELECT question_id, title, description AS content, user_id FROM questions WHERE question_id = ?",
+      [question_id]
     );
 
     if (rows.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         error: "Not Found",
-        message: `No question found with id ${questionid}`,
+        message: "The requested question could not be found.",
       });
     }
 
-    return res.status(StatusCodes.OK).json(rows[0]);
+    return res.status(StatusCodes.OK).json({ question: rows[0] });
   } catch (error) {
     console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal Server Error",
-      message: "Could not fetch the question.",
+      message: "An unexpected error occurred.",
     });
   }
 };
 
-// ** EDIT QUESTION Handler **
+// EDIT QUESTION
 const editQuestion = async (req, res) => {
-  const userid = req.user.userid;
-  const { questionid } = req.params;
+  const user_id = req.user.userid;
+  const { question_id } = req.params; // matches route :question_id
   const { title, description } = req.body;
 
   if (!title && !description) {
@@ -103,16 +283,18 @@ const editQuestion = async (req, res) => {
 
   try {
     const [questionResult] = await dbConnection.query(
-      "SELECT userid FROM questions WHERE questionid = ?",
-      [questionid]
+      "SELECT user_id FROM questions WHERE question_id = ?",
+      [question_id]
     );
+
     if (questionResult.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         error: "Not Found",
-        message: `No question found with id ${questionid}`,
+        message: `No question found with id ${question_id}`,
       });
     }
-    if (questionResult[0].userid !== userid) {
+
+    if (questionResult[0].user_id !== user_id) {
       return res.status(StatusCodes.FORBIDDEN).json({
         error: "Forbidden",
         message: "You are not authorized to edit this question",
@@ -121,7 +303,6 @@ const editQuestion = async (req, res) => {
 
     const fields = [];
     const values = [];
-
     if (title) {
       fields.push("title = ?");
       values.push(title);
@@ -131,24 +312,16 @@ const editQuestion = async (req, res) => {
       values.push(description);
     }
 
-    values.push(questionid);
+    values.push(question_id);
 
     const updateQuery = `UPDATE questions SET ${fields.join(
       ", "
-    )} WHERE questionid = ?`;
-
+    )} WHERE question_id = ?`;
     const [updateResult] = await dbConnection.query(updateQuery, values);
 
-    if (updateResult.affectedRows === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        error: "Not Found",
-        message: `No question found with id ${questionid}`,
-      });
-    }
-
-    return res
-      .status(StatusCodes.OK)
-      .json({ message: "Question updated successfully" });
+    return res.status(StatusCodes.OK).json({
+      message: "Question updated successfully",
+    });
   } catch (error) {
     console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -158,9 +331,4 @@ const editQuestion = async (req, res) => {
   }
 };
 
-module.exports = {
-  askQuestion,
-  allQuestions,
-  singleQuestion,
-  editQuestion,
-};
+module.exports = { askQuestion, allQuestions, singleQuestion, editQuestion };

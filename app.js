@@ -22,16 +22,22 @@ const answersRoutes = require("./routes/answerRoute");
 //json middleware to extract json
 app.use(express.json());
 
+// Root route for browser check
+app.get("/", (req, res) => {
+  res.send("Evangadi Forum Backend is running");
+});
+
+
 //user routes middleware
-app.use("/api/users", UserRoutes);
+app.use("/api/user", UserRoutes);
 
 //questions routes middleware
-app.use("/api/questions", authMiddleware, questionsRoutes);
+app.use("/api/question", authMiddleware, questionsRoutes);
 
-// app.use("/api/questions", questionsRoutes);
+// app.use("/api/question", questionsRoutes);
 
 //answer routes middleware
-app.use("/api/answers", authMiddleware, answersRoutes);
+app.use("/api/answer", authMiddleware, answersRoutes);
 // app.use("/api/answers", answersRoutes);
 async function start() {
   try {

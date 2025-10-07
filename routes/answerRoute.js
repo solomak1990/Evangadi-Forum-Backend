@@ -1,12 +1,10 @@
+// routes/answerRoute.js
 const express = require("express");
 const router = express.Router();
-router.post("/answer", (req, res) => {
-  res.send("Answer submitted successfully");
-});
-router.get("/allanswers", (req, res) => {
-  res.send(`List of answers for question ID:${req.params.questionId}`);
-});
-router.put("/save", (req, res) => {
-  res.send("Answer saved");
-});
+const answerController = require("../controller/answerController");
+const auth = require("../middleware/authMiddleware");
+
+router.get("/:question_id", answerController.getAnswersForQuestion);
+router.post("/", auth, answerController.postAnswer);
+
 module.exports = router;

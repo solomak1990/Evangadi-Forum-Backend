@@ -1,27 +1,24 @@
-
-// module.exports = router
-
-const express = require('express');
+// routes/questionRoute.js
+const express = require("express");
 const router = express.Router();
-const authMiddleware = require('../middleware/authmiddleware');
+const {
+  askQuestion,
+  allQuestions,
+  singleQuestion,
+  editQuestion,
+} = require("../controller/questionController");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// Create a new question (protected)
-router.post('/createquestion', authMiddleware, (req, res) => {
-    
-    res.json({ message: "Question created successfully" });
-});
+// Public route - get all questions
+router.get("/", allQuestions);
 
-// Get all questions (protected)
-router.get('/allquestion', authMiddleware, (req, res) => {
-   
-    res.json({ message: "List of all questions" });
-});
+// Public route - get single question by id
+router.get("/:question_id", singleQuestion);
 
-// Get a single question by ID (protected)
-router.get('/singlequestion/:id', authMiddleware, (req, res) => {
-    const { id } = req.params; 
-  
-    res.json({ message: `Details of question with ID: ${id}` });
-});
+// Protected route - ask (create) a new question
+router.post("/", authMiddleware, askQuestion);
+
+// Protected route - edit question (only owner)
+router.put("/:question_id", authMiddleware, editQuestion);
 
 module.exports = router;
