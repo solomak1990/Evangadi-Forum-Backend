@@ -12,5 +12,4 @@ const dbConnection = mysql2.createPool({
 
 
 
-
 module.exports = dbConnection.promise();
