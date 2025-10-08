@@ -1,22 +1,11 @@
+// routes/userRoute.js
 const express = require("express");
 const router = express.Router();
+const userController = require("../controller/userController");
+const auth = require("../middleware/authMiddleware");
 
-// register route
-router.post("/register", (req, res) => {
-  res.send("register user");
-   
-});
-
-router.post("/login", (req, res) => {
-  res.send("login user");
- 
-});
-
-router.get("/checkUser", (req, res) => {
-  res.send("check user");
- 
-});
-
-
+router.post("/register", userController.register);
+router.post("/login", userController.login);
+router.get("/checkUser", auth, userController.checker);
 
 module.exports = router;
