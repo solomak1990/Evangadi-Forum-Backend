@@ -1,4 +1,3 @@
-
 const dbConnection = require("../db/dbConfig.js");
 const { StatusCodes } = require("http-status-codes");
 const { randomUUID } = require("crypto");
@@ -68,7 +67,7 @@ const allQuestions = async (req, res) => {
 
 // GET SINGLE QUESTION
 const singleQuestion = async (req, res) => {
-  const { question_id } = req.params; // matches route :question_id
+  const { question_id } = req.params;
   console.log("Looking for question:", question_id);
 
   try {
@@ -97,7 +96,7 @@ const singleQuestion = async (req, res) => {
 // EDIT QUESTION
 const editQuestion = async (req, res) => {
   const user_id = req.user.userid;
-  const { question_id } = req.params; // matches route :question_id
+  const { question_id } = req.params;
   const { title, description } = req.body;
 
   if (!title && !description) {
@@ -140,10 +139,8 @@ const editQuestion = async (req, res) => {
 
     values.push(question_id);
 
-    const updateQuery = `UPDATE questions SET ${fields.join(
-      ", "
-    )} WHERE question_id = ?`;
-    const [updateResult] = await dbConnection.query(updateQuery, values);
+    const updateQuery = `UPDATE questions SET ${fields.join(", ")} WHERE question_id = ?`;
+    await dbConnection.query(updateQuery, values);
 
     return res.status(StatusCodes.OK).json({
       message: "Question updated successfully",
