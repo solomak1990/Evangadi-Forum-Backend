@@ -21,4 +21,12 @@ router.post("/", authMiddleware, askQuestion);
 // Protected route - edit question (only owner)
 router.put("/:question_id", authMiddleware, editQuestion);
 
+
+// Protected route - delete question (only owner)
+const { deleteQuestion } = require("../controller/questionController");
+
+// Add this route at the end
+router.delete("/:question_id", authMiddleware, deleteQuestion);
+
+
 module.exports = router;

@@ -157,4 +157,47 @@ const editQuestion = async (req, res) => {
   }
 };
 
-module.exports = { askQuestion, allQuestions, singleQuestion, editQuestion };
+// DELETE QUESTION
+const deleteQuestion = async (req, res) => {
+  const user_id = req.user.userid; // logged-in user
+  const { question_id } = req.params;
+
+  try {
+    // check if question exists
+    const [questionResult] = await dbConnection.query(
+      "SELECT user_id FROM questions WHERE question_id = ?",
+      [question_id]
+    );
+
+    if (questionResult.length === 0) {
+      return res.status(404).json({
+        error: "Not Found",
+        message: `No question found with id ${question_id}`,
+      });
+    }
+
+    // check if current user owns the question
+    if (questionResult[0].user_id !== user_id) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You are not authorized to delete this question",
+      });
+    }
+
+    // delete question
+    await dbConnection.query("DELETE FROM questions WHERE question_id = ?", [
+      question_id,
+    ]);
+
+    return res.status(200).json({ message: "Question deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting question:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Could not delete the question",
+    });
+  }
+};
+
+
+module.exports = { askQuestion, allQuestions, singleQuestion, editQuestion,  deleteQuestion,};
