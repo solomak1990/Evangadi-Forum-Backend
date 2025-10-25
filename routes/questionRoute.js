@@ -35,7 +35,7 @@ const {
   singleQuestion,
   editQuestion,
   deleteQuestion,
-} = require("../controllers/questionController"); // ✅ Make sure the folder is named 'controllers'
+} = require("../controller/questionController"); // ✅ Make sure the folder is named 'controllers'
 
 // Import authentication middleware
 const authMiddleware = require("../middleware/authMiddleware");
