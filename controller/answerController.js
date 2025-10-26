@@ -1,17 +1,12 @@
-
-const dbConnection = require("../db/dbConfig"); 
+const dbConnection = require("../db/dbConfig");
 const { StatusCodes } = require("http-status-codes");
 
-//  POST — Submit an answer for a question
+// POST — Submit an answer for a question
 async function postAnswer(req, res) {
-  // Allow questionid or question_id from the body
   const { questionid, question_id, answer } = req.body;
   const { userid } = req.user;
-
-  // Determine the final question ID to use
   const finalQuestionId = question_id || questionid;
 
-  //  Validate input
   if (!finalQuestionId || !answer) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: "Bad Request",
@@ -19,7 +14,6 @@ async function postAnswer(req, res) {
     });
   }
 
-  //  Validate answer length
   if (answer.length > 400) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: "Bad Request",
@@ -28,12 +22,11 @@ async function postAnswer(req, res) {
   }
 
   try {
-    // 1. Check if question exists
+    // Check if question exists
     const [questionRows] = await dbConnection.query(
       "SELECT question_id FROM questions WHERE question_id = ?",
       [finalQuestionId]
     );
-
     if (questionRows.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         error: "Not Found",
@@ -41,8 +34,7 @@ async function postAnswer(req, res) {
       });
     }
 
-    // 2. Insert answer into the database.
-    // The created_at field will be automatically populated by the DB trigger/default.
+    // Insert answer
     await dbConnection.query(
       "INSERT INTO answers (user_id, question_id, answer) VALUES (?, ?, ?)",
       [userid, finalQuestionId, answer]
@@ -52,23 +44,20 @@ async function postAnswer(req, res) {
       message: "Answer posted successfully",
     });
   } catch (error) {
-    console.error(" Error posting answer:", error);
+    console.error("❌ Error posting answer:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal Server Error",
-      // Include the SQL error message if available for better debugging
       message: error.sqlMessage || "An unexpected error occurred.",
     });
   }
 }
-
-
 
 // GET — Retrieve all answers for a specific question
 async function getAnswersForQuestion(req, res) {
   const { question_id } = req.params;
 
   try {
-    // Ensure the question exists
+    // Ensure question exists
     const [questionRows] = await dbConnection.query(
       "SELECT question_id FROM questions WHERE question_id = ?",
       [question_id]
@@ -80,53 +69,118 @@ async function getAnswersForQuestion(req, res) {
       });
     }
 
-    // Discover the timestamp column name in answers table
-    const candidateColumns = [
-      "created_at",
-      "createdAt",
-      "created_on",
-      "createdOn",
-      "answer_date",
-      "date_added",
-      "timestamp",
-    ];
-
-    const [existingCols] = await dbConnection.query(
-      `SELECT column_name FROM information_schema.columns 
-       WHERE table_schema = DATABASE() AND table_name = 'answers' 
-       AND column_name IN (${candidateColumns.map(() => "?").join(", ")})`,
-      candidateColumns
+    // Fetch answers (order by answer_id descending = newest first)
+    const [answers] = await dbConnection.query(
+      `SELECT a.answer_id, a.answer AS content, a.user_id, u.user_name
+       FROM answers a
+       JOIN users u ON a.user_id = u.user_id
+       WHERE a.question_id = ?
+       ORDER BY a.answer_id DESC`,
+      [question_id]
     );
 
-    const existingSet = new Set(existingCols.map((r) => r.column_name));
-    const chosenTsCol = candidateColumns.find((c) => existingSet.has(c));
-
-    // Build SQL using discovered timestamp column if available
-    const tsSelect = chosenTsCol ? `a.${chosenTsCol} AS created_at` : `NULL AS created_at`;
-    const orderBy = chosenTsCol ? `ORDER BY a.${chosenTsCol} DESC` : `ORDER BY a.answer_id DESC`;
-
-    const sql = `
-      SELECT
-        a.answer_id AS answer_id,
-        a.answer    AS content,
-        u.user_name AS user_name,
-        ${tsSelect}
-      FROM answers a
-      JOIN users u ON a.user_id = u.user_id
-      WHERE a.question_id = ?
-      ${orderBy}
-    `;
-
-    const [answers] = await dbConnection.query(sql, [question_id]);
-
-    return res.status(StatusCodes.OK).json({
-      answers,
-    });
+    return res.status(StatusCodes.OK).json({ answers });
   } catch (error) {
     console.error("❌ Error fetching answers:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal Server Error",
-      message: "An unexpected error occurred.",
+      message: "An unexpected error occurred while fetching answers.",
+    });
+  }
+}
+
+// PUT — Update an existing answer
+async function updateAnswer(req, res) {
+  const { answer_id } = req.params;
+  const { answer } = req.body;
+  const { userid } = req.user;
+
+  if (!answer) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "Bad Request",
+      message: "Answer content is required.",
+    });
+  }
+
+  if (answer.length > 400) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "Bad Request",
+      message: "Answer must be less than 400 characters.",
+    });
+  }
+
+  try {
+    const [answerRows] = await dbConnection.query(
+      "SELECT user_id FROM answers WHERE answer_id = ?",
+      [answer_id]
+    );
+
+    if (answerRows.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        error: "Not Found",
+        message: "Answer not found.",
+      });
+    }
+
+    if (answerRows[0].user_id !== userid) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        error: "Forbidden",
+        message: "You can only edit your own answers.",
+      });
+    }
+
+    await dbConnection.query(
+      "UPDATE answers SET answer = ? WHERE answer_id = ?",
+      [answer, answer_id]
+    );
+
+    return res.status(StatusCodes.OK).json({
+      message: "Answer updated successfully.",
+    });
+  } catch (error) {
+    console.error("❌ Error updating answer:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      error: "Internal Server Error",
+      message: error.sqlMessage || "An unexpected error occurred.",
+    });
+  }
+}
+
+// DELETE — Delete an existing answer
+async function deleteAnswer(req, res) {
+  const { answer_id } = req.params;
+  const { userid } = req.user;
+
+  try {
+    const [answerRows] = await dbConnection.query(
+      "SELECT user_id FROM answers WHERE answer_id = ?",
+      [answer_id]
+    );
+
+    if (answerRows.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        error: "Not Found",
+        message: "Answer not found.",
+      });
+    }
+
+    if (answerRows[0].user_id !== userid) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        error: "Forbidden",
+        message: "You can only delete your own answers.",
+      });
+    }
+
+    await dbConnection.query("DELETE FROM answers WHERE answer_id = ?", [answer_id]);
+
+    return res.status(StatusCodes.OK).json({
+      message: "Answer deleted successfully.",
+    });
+  } catch (error) {
+    console.error("❌ Error deleting answer:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      error: "Internal Server Error",
+      message: error.sqlMessage || "An unexpected error occurred.",
     });
   }
 }
@@ -134,4 +188,6 @@ async function getAnswersForQuestion(req, res) {
 module.exports = {
   postAnswer,
   getAnswersForQuestion,
+  updateAnswer,
+  deleteAnswer,
 };

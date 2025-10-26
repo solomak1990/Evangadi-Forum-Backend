@@ -1,4 +1,3 @@
-
 const dbConnection = require("../db/dbConfig.js");
 const { StatusCodes } = require("http-status-codes");
 const { randomUUID } = require("crypto");
@@ -68,7 +67,7 @@ const allQuestions = async (req, res) => {
 
 // GET SINGLE QUESTION
 const singleQuestion = async (req, res) => {
-  const { question_id } = req.params; // matches route :question_id
+  const { question_id } = req.params;
   console.log("Looking for question:", question_id);
 
   try {
@@ -97,7 +96,7 @@ const singleQuestion = async (req, res) => {
 // EDIT QUESTION
 const editQuestion = async (req, res) => {
   const user_id = req.user.userid;
-  const { question_id } = req.params; // matches route :question_id
+  const { question_id } = req.params;
   const { title, description } = req.body;
 
   if (!title && !description) {
@@ -140,10 +139,8 @@ const editQuestion = async (req, res) => {
 
     values.push(question_id);
 
-    const updateQuery = `UPDATE questions SET ${fields.join(
-      ", "
-    )} WHERE question_id = ?`;
-    const [updateResult] = await dbConnection.query(updateQuery, values);
+    const updateQuery = `UPDATE questions SET ${fields.join(", ")} WHERE question_id = ?`;
+    await dbConnection.query(updateQuery, values);
 
     return res.status(StatusCodes.OK).json({
       message: "Question updated successfully",
@@ -157,4 +154,47 @@ const editQuestion = async (req, res) => {
   }
 };
 
-module.exports = { askQuestion, allQuestions, singleQuestion, editQuestion };
+// DELETE QUESTION
+const deleteQuestion = async (req, res) => {
+  const user_id = req.user.userid; // logged-in user
+  const { question_id } = req.params;
+
+  try {
+    // check if question exists
+    const [questionResult] = await dbConnection.query(
+      "SELECT user_id FROM questions WHERE question_id = ?",
+      [question_id]
+    );
+
+    if (questionResult.length === 0) {
+      return res.status(404).json({
+        error: "Not Found",
+        message: `No question found with id ${question_id}`,
+      });
+    }
+
+    // check if current user owns the question
+    if (questionResult[0].user_id !== user_id) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You are not authorized to delete this question",
+      });
+    }
+
+    // delete question
+    await dbConnection.query("DELETE FROM questions WHERE question_id = ?", [
+      question_id,
+    ]);
+
+    return res.status(200).json({ message: "Question deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting question:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Could not delete the question",
+    });
+  }
+};
+
+
+module.exports = { askQuestion, allQuestions, singleQuestion, editQuestion,  deleteQuestion,};
